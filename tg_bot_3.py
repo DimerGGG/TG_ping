@@ -4,7 +4,6 @@ import time
 import threading
 import ping3
 import telebot
-import win32gui
 from configobj import ConfigObj
 from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageDraw
@@ -23,6 +22,7 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 # Переменная для хранения предыдущего состояния сервера
 prev_status = None
+exit_event = threading.Event()
 
 # Функция для минимизации окна консоли
 def minimize_console():
@@ -37,13 +37,13 @@ def check_server_status(ip):
 # Функция для отправки статуса сервера в личные сообщения
 def send_server_status():
     global prev_status
-    while True:
+    while not exit_event.is_set():
         current_status = "client is UP" if check_server_status(IP_ADDRESS) else "client is DOWN"
         if current_status != prev_status:
             bot.send_message(ID, current_status)
             print(current_status)
             prev_status = current_status
-        time.sleep(AWAIT)
+        exit_event.wait(AWAIT)
 
 # Обработчик команды /start
 @bot.message_handler(commands=['start'])
@@ -70,12 +70,14 @@ def create_image():
 
 # Функция для выхода из программы
 def on_quit(icon, item):
+    exit_event.set()
+    bot.stop_polling()
     icon.stop()
-    sys.exit()
+    sys.exit(0)
 
 # Запуск функции отправки статуса сервера в отдельном потоке
 def start_server_status():
-    threading.Thread(target=send_server_status).start()
+    threading.Thread(target=send_server_status, daemon=True).start()
 
 # Основная функция для запуска программы
 def main():
