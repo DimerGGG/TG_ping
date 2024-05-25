@@ -2,7 +2,7 @@ import ctypes
 import sys
 import time
 import threading
-import ping3
+from pythonping import ping
 import telebot
 from configobj import ConfigObj
 from pystray import Icon, Menu, MenuItem
@@ -32,7 +32,8 @@ def minimize_console():
 
 # Функция для проверки статуса сервера
 def check_server_status(ip):
-    return ping3.ping(ip, timeout=1) is not None
+    response = ping(ip, count=1, timeout=1)
+    return response.success()
 
 # Функция для отправки статуса сервера в личные сообщения
 def send_server_status():
